@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Desk Console</title>
+    <link rel="stylesheet" href="/static/css/bloomberg.css">
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="logo">TRADING DESK CONSOLE</div>
+    <div class="market-status">
+        <div class="index">
+            <span style="color:#3b82f6">S&P 500</span>
+            <span id="idx-sp500">--</span>
+        </div>
+        <div class="index">
+            <span style="color:#a855f7">NASDAQ</span>
+            <span id="idx-nasdaq">--</span>
+        </div>
+        <div class="index">
+            <span style="color:#06b6d4">DOW</span>
+            <span id="idx-dow">--</span>
+        </div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+</div>
+
+<!-- Command Bar -->
+<div class="command-bar">
+    <span class="prompt">></span>
+    <input type="text" id="command-input" placeholder="Enter command... (HELP for commands)" autocomplete="off" spellcheck="false">
+</div>
+
+<!-- Main 4-Panel Grid -->
+<div class="main-grid">
+
+    <!-- Panel 1: Watchlist / Market Data -->
+    <div class="panel" id="panel-watchlist">
+        <div class="panel-header">
+            <span class="title">Market Data</span>
+            <div class="controls">
+                <button onclick="addSymbolPrompt()">+ ADD</button>
+                <button onclick="refreshQuotes()">REFRESH</button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="watchlist-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Last</th>
+                        <th>Chg</th>
+                        <th>Chg%</th>
+                        <th>Volume</th>
+                        <th>High</th>
+                        <th>Low</th>
+                    </tr>
+                </thead>
+                <tbody id="watchlist-body">
+                    <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">Loading market data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Panel 2: Chart -->
+    <div class="panel" id="panel-chart">
+        <div class="panel-header">
+            <span class="title">Chart — <span id="chart-symbol">AAPL</span></span>
+            <div class="controls">
+                <button class="active" onclick="changeChartPeriod('6mo','1d',this)">6M</button>
+                <button onclick="changeChartPeriod('1y','1d',this)">1Y</button>
+                <button onclick="changeChartPeriod('5y','1wk',this)">5Y</button>
+                <button onclick="changeChartPeriod('1mo','1h',this)">1M</button>
+                <button onclick="changeChartPeriod('5d','15m',this)">5D</button>
+            </div>
+        </div>
+        <div class="panel-body" style="padding:0">
+            <div class="chart-container" id="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- Panel 3: AI Analysis -->
+    <div class="panel" id="panel-analysis">
+        <div class="panel-header">
+            <span class="title">AI Analysis</span>
+            <div class="controls">
+                <button onclick="runAnalysis()">RUN ANALYSIS</button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="analysis-placeholder" id="analysis-placeholder">
+                <span>Select a symbol and run analysis</span>
+                <span class="hint">Click a symbol in Market Data or type: ANALYZE AAPL</span>
+            </div>
+            <div class="analysis-content" id="analysis-content" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- Panel 4: Technical Indicators -->
+    <div class="panel" id="panel-technicals">
+        <div class="panel-header">
+            <span class="title">Technical Indicators — <span id="tech-symbol">AAPL</span></span>
+            <div class="controls">
+                <button onclick="loadTechnicals()">REFRESH</button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="analysis-placeholder" id="tech-placeholder">
+                <span>Select a symbol to view technicals</span>
+            </div>
+            <div id="tech-content" style="display:none"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Bar: Portfolio / Trades / Terminal -->
+<div class="bottom-bar">
+    <div class="tabs">
+        <button class="tab active" onclick="switchBottomTab('portfolio',this)">Portfolio</button>
+        <button class="tab" onclick="switchBottomTab('trades',this)">Trade History</button>
+        <button class="tab" onclick="switchBottomTab('terminal',this)">Terminal</button>
+        <button class="tab" onclick="switchBottomTab('order',this)">New Order</button>
+    </div>
+    <div class="bottom-content" id="bottom-content">
+        <div id="tab-portfolio"></div>
+        <div id="tab-trades" style="display:none"></div>
+        <div id="tab-terminal" style="display:none"></div>
+        <div id="tab-order" style="display:none"></div>
+    </div>
+</div>
+
+<!-- Order Modal -->
+<div class="modal-overlay" id="order-modal" style="display:none">
+    <div class="modal">
+        <h3>New Order</h3>
+        <div class="form-group">
+            <label>Symbol</label>
+            <input type="text" id="order-symbol" placeholder="AAPL" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+            <label>Side</label>
+            <select id="order-side">
+                <option value="BUY">BUY</option>
+                <option value="SELL">SELL</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="order-qty" placeholder="100" min="1">
+        </div>
+        <div class="form-group">
+            <label>Order Type</label>
+            <select id="order-type">
+                <option value="MARKET">MARKET</option>
+                <option value="LIMIT">LIMIT</option>
+            </select>
+        </div>
+        <div class="form-group" id="limit-price-group" style="display:none">
+            <label>Limit Price</label>
+            <input type="number" id="order-limit-price" placeholder="0.00" step="0.01">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-cancel" onclick="closeOrderModal()">Cancel</button>
+            <button class="btn btn-buy" id="order-submit-btn" onclick="submitOrder()">Submit Order</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
