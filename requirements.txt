@@ -8,4 +8,5 @@ stockstats>=0.6.2
 pydantic>=2.5.0
 python-dotenv>=1.0.0
 httpx>=0.25.0
-tradingagents>=0.2.0
+# tradingagents is installed separately from source:
+# pip3 install git+https://github.com/TauricResearch/TradingAgents.git
